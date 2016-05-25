@@ -1,4 +1,8 @@
 import pandas as pd
+from sklearn.ensemble import RandomForestClassifier 
+from sklearn.cross_validation import train_test_split
+from sklearn.metrics import confusion_matrix, classification_report, jaccard_similarity_score, accuracy_score
+
 
 def mapCategories(categories):
     tMap = {}
@@ -31,5 +35,26 @@ df['game_date'] = df['game_date'].map(lambda x: x - df.game_date.min())
 seasons = df['season'].str.slice(start=0,stop=4)
 df['season_int'] = seasons.map(lambda x: int(x)-1996)
 
-df = df.drop(['team_name','shot_type', 'shot_zone_area', 'combined_shot_type', 'shot_zone_basic', 'shot_zone_range', 'matchup', 'opponent', 'action_type', 'team_id', 'season'], axis=1)
+dfTest = df[df['shot_made_flag'].isnull()]
+shotSeries = dfTest['shot_id']
+
+df = df.dropna()
+
+y = df['shot_made_flag'].values
+X = df.drop(['team_name','shot_type', 'shot_zone_area', 'combined_shot_type', 'shot_zone_basic', 'shot_zone_range', 'matchup', 'opponent', 'action_type', 'team_id', 'season', 'shot_made_flag'], axis=1).values
+
+testX = dfTest.drop(['team_name','shot_type', 'shot_zone_area', 'combined_shot_type', 'shot_zone_basic', 'shot_zone_range', 'matchup', 'opponent', 'action_type', 'team_id', 'season', 'shot_made_flag'], axis=1)
+
+forest = RandomForestClassifier(n_estimators = 100)
+forest = forest.fit(X,y)
+
+predicted = forest.predict_proba(testX)
+
+dfPredicted['shot_id'] = shotSeries
+dfPredicted['shot_made_flag'] = predicted
+dfPredicted.to_csv('data/results.csv', sep=',')
+#expected = testY
+
+print dfPredicted.head(20)
+
 
