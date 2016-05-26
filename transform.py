@@ -19,7 +19,7 @@ shotZoneMap = {'Right Side(R)':0, 'Left Side(L)':1, 'Left Side Center(LC)':2, 'R
 shotTypeMap = {'2PT Field Goal':2, '3PT Field Goal':3}
 shotZoneRangeMap = {'16-24 ft.':0, '8-16 ft.':1, 'Less Than 8 ft.':2, '24+ ft.':3, 'Back Court Shot':4}
 
-df = pd.read_csv('/home/hacm/projects/kobe/data/data.csv', sep=',', header=0)
+df = pd.read_csv('data/data.csv', sep=',', header=0)
 
 df['shot_type_alt'] = df['shot_type'].map(shotTypeMap)
 df['shot_zone_area_alt'] = df['shot_zone_area'].map(shotZoneMap)
@@ -50,11 +50,16 @@ forest = forest.fit(X,y)
 
 predicted = forest.predict_proba(testX)
 
-dfPredicted['shot_id'] = shotSeries
-dfPredicted['shot_made_flag'] = predicted
-dfPredicted.to_csv('data/results.csv', sep=',')
+##dfPred = pd.DataFrame({'shot_id':shotSeries,'shot_made_flag':predicted}
+
+#dfPredicted = pd.DataFrame({})
+
+#dfPredicted['shot_id'] = shotSeries
+
+#dfPredicted['shot_made_flag'] = predicted
+#dfPredicted.to_csv('data/results.csv', sep=',')
 #expected = testY
 
-print dfPredicted.head(20)
+#print dfPredicted.head(20)
 
 
