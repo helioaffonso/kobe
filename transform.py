@@ -31,6 +31,7 @@ df['action_type_alt'] = df['action_type'].map(mapCategories(df['action_type'].un
 df['game_date'] = pd.to_datetime(df['game_date'])
 df['game_date'] = df['game_date'].map(lambda x: x.toordinal())
 df['game_date'] = df['game_date'].map(lambda x: x - df.game_date.min())
+df['total_elapsed_time'] = ((df.period-1)*12*60) + ((11-df.minutes_remaining)*60) + (60 - df.seconds_remaining)
 
 seasons = df['season'].str.slice(start=0,stop=4)
 df['season_int'] = seasons.map(lambda x: int(x)-1996)
@@ -50,14 +51,11 @@ forest = forest.fit(X,y)
 
 predicted = forest.predict_proba(testX)
 
-##dfPred = pd.DataFrame({'shot_id':shotSeries,'shot_made_flag':predicted}
+dfPredicted = pd.DataFrame({})
+dfPredicted['shot_id'] = shotSeries
+dfPredicted['shot_made_flag'] = predicted[:,1]
+dfPredicted.to_csv('data/results1.csv', sep=',', index=False)
 
-#dfPredicted = pd.DataFrame({})
-
-#dfPredicted['shot_id'] = shotSeries
-
-#dfPredicted['shot_made_flag'] = predicted
-#dfPredicted.to_csv('data/results.csv', sep=',')
 #expected = testY
 
 #print dfPredicted.head(20)
