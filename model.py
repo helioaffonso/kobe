@@ -4,6 +4,7 @@ import transform
 import xgboost as xgb
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.ensemble import RandomForestClassifier 
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import confusion_matrix, classification_report, jaccard_similarity_score, accuracy_score, log_loss
 from sklearn import cross_validation
 from sklearn.cross_validation import KFold
@@ -18,7 +19,7 @@ def ensemble():
 	df = df.dropna()
 
 	y = df['shot_made_flag'].as_matrix()
-	X = df.drop(['team_name','shot_type', 'game_id', 'shot_zone_area', 'combined_shot_type', 'shot_zone_basic', 'shot_zone_range', 'matchup', 'opponent', 'action_type', 'team_id', 'season', 'shot_made_flag'], axis=1).as_matrix()
+	X = df.drop(['game_event_id', 'lat', 'lon', 'team_name','shot_type', 'game_id', 'shot_zone_area', 'combined_shot_type', 'minutes_remaining', 'seconds_remaining', 'shot_zone_basic', 'shot_zone_range', 'matchup', 'opponent', 'action_type', 'team_id', 'season', 'shot_made_flag'], axis=1).as_matrix()
 
 	kf = KFold(X.shape[0],n_folds=6, shuffle=True)
 
@@ -26,12 +27,12 @@ def ensemble():
 	#clfX = xgb.XGBClassifier(learning_rate=0.1, n_estimators=50,max_depth=5, min_child_weight=1, subsample=0.8,scale_pos_weight=1,colsample_bytree=0.8,gamma=0)
 	clfX = xgb.XGBClassifier(n_estimators=50,max_depth=5)
 	clfRF = RandomForestClassifier(n_estimators=80)
-	clfAda = AdaBoostClassifier(n_estimators=50)
+	clfGB = GradientBoostingClassifier(n_estimators=80)
 
 	probs = []
 	probsXG = []
 	probsRF = []
-	probsAda = []
+	probsGB = []
 
 	for train_index, test_index in kf:
 		#print("TRAIN:", train_index, "TEST:", test_index)
@@ -40,17 +41,18 @@ def ensemble():
 
 		clfX = clfX.fit(X_train,y_train)
 		clfRF = clfRF.fit(X_train,y_train)
-		clfAda = clfAda.fit(X_train,y_train)
+		clfGB = clfGB.fit(X_train,y_train)
 
 		predictionX = clfX.predict_proba(X_test)
 		predictionRF = clfRF.predict_proba(X_test)
-		predictionAda = clfAda.predict_proba(X_test)
+		predictionGB = clfGB.predict_proba(X_test)
 
 		dfPred = pd.DataFrame({})
 		dfPred['XG'] = pd.Series(predictionX[:,1])
 		dfPred['RF'] = pd.Series(predictionRF[:,1])
+		dfPred['GB'] = pd.Series(predictionGB[:,1])
 
-		dfPred['XGRF'] = (2*dfPred['XG'] + dfPred['RF'])/3
+		dfPred['XGRF'] = (2*dfPred['XG'] + 2*dfPred['GB'] + dfPred['RF'])/5
 
 		#print y_test.shape, type(y_test.shape)
 		#print dfPred['XGRF'].shape, type(dfPred['XGRF'].shape)
@@ -58,17 +60,17 @@ def ensemble():
 		loss   = transform.logloss(y_test,dfPred['XGRF'].values)
 		lossXG = transform.logloss(y_test,predictionX[:,1])
 		lossRF = transform.logloss(y_test,predictionRF[:,1])
-		lossAda = transform.logloss(y_test,predictionAda[:,1])
+		lossGB = transform.logloss(y_test,predictionGB[:,1])
 
 		probs.append(loss)
 		probsXG.append(lossXG)
 		probsRF.append(lossRF)
-		probsAda.append(lossAda)
+		probsGB.append(lossGB)
 
 	print probs, np.array(probs).mean()
 	print probsXG, np.array(probsXG).mean()
 	print probsRF, np.array(probsRF).mean()
-	print probsAda, np.array(probsAda).mean()
+	print probsGB, np.array(probsGB).mean()
 
 
 def KfoldItems():
@@ -85,7 +87,8 @@ def KfoldItems():
 
 	#clfX = xgb.XGBClassifier(learning_rate=0.1, n_estimators=50,max_depth=5, min_child_weight=1, subsample=0.8,scale_pos_weight=1,colsample_bytree=0.8,gamma=0,seed=27)
 	#clfX = xgb.XGBClassifier(learning_rate=0.1, n_estimators=50,max_depth=5, min_child_weight=1, subsample=0.8,scale_pos_weight=1,colsample_bytree=0.8,gamma=0)
-	clfX = xgb.XGBClassifier(n_estimators=50,max_depth=5)
+	#clfX = xgb.XGBClassifier(n_estimators=50,max_depth=5)
+	clfX = GradientBoostingClassifier(n_estimators=250)
 
 	probs = []
 
@@ -191,7 +194,7 @@ def extraTrees(X_train, X_test, y_train, y_test):
 	clf = ExtraTreesClassifier(n_estimators=10, max_depth=None, min_samples_split=1, random_state=0)
 
 
-def submited():
+def submission():
 	df = transform.getDataFrame()
 	dfTest = df[df['shot_made_flag'].isnull()]
 	shotSeries = dfTest['shot_id']
@@ -202,17 +205,30 @@ def submited():
 	X = df.drop(['team_name','shot_type', 'game_id', 'shot_zone_area', 'combined_shot_type', 'shot_zone_basic', 'shot_zone_range', 'matchup', 'opponent', 'action_type', 'team_id', 'season', 'shot_made_flag'], axis=1).as_matrix()
 	testX = dfTest.drop(['team_name','shot_type', 'game_id', 'shot_zone_area', 'combined_shot_type', 'shot_zone_basic', 'shot_zone_range', 'matchup', 'opponent', 'action_type', 'team_id', 'season', 'shot_made_flag'], axis=1).values
 
-	clfX = xgb.XGBClassifier(learning_rate=0.1, n_estimators=50,max_depth=5, min_child_weight=1, subsample=0.8,scale_pos_weight=1,colsample_bytree=0.8,gamma=0,seed=27)
+	#clfX = xgb.XGBClassifier(learning_rate=0.1, n_estimators=50,max_depth=5, min_child_weight=1, subsample=0.8,scale_pos_weight=1,colsample_bytree=0.8,gamma=0,seed=27)
+	clfRF = RandomForestClassifier(n_estimators=100)
 	#clfX = xgb.XGBClassifier(learning_rate=0.1, n_estimators=50,max_depth=5, min_child_weight=1, subsample=0.8,scale_pos_weight=1,colsample_bytree=0.8,gamma=0)
-	#clfX = xgb.XGBClassifier(n_estimators=50,max_depth=5)	
-	clfX = clfX.fit(X,y)
+	clfX = xgb.XGBClassifier(n_estimators=50,max_depth=5)	
+	clfGB = GradientBoostingClassifier(n_estimators=80)
 
-	predicted = clfX.predict_proba(testX)
+	clfX = clfX.fit(X,y)
+	clfRF = clfRF.fit(X,y)
+	clfGB = clfGB.fit(X,y)
+
+	predictionX = clfX.predict_proba(testX)
+	predictionRF = clfRF.predict_proba(testX)
+	predictionGB = clfGB.predict_proba(testX)
+
+	dfPred = pd.DataFrame({})
+	dfPred['XG'] = pd.Series(predictionX[:,1])
+	dfPred['RF'] = pd.Series(predictionRF[:,1])
+	dfPred['GB'] = pd.Series(predictionGB[:,1])
+	dfPred['XGRF'] = (2*dfPred['XG'] + 2*dfPred['GB'] + dfPred['RF'])/5
 
 	dfPredicted = pd.DataFrame({})
 	dfPredicted['shot_id'] = shotSeries
-	dfPredicted['shot_made_flag'] = predicted[:,1]
-	dfPredicted.to_csv('data/resultsXG-RF.csv', sep=',', index=False)
+	dfPredicted['shot_made_flag'] = dfPred['XGRF'].values
+	dfPredicted.to_csv('data/resultsXG-RF-GB.csv', sep=',', index=False)
 
 
 def standartModel():

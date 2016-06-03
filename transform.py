@@ -3,6 +3,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.cross_validation import train_test_split
 from sklearn.metrics import confusion_matrix, classification_report, jaccard_similarity_score, accuracy_score
 import scipy as sp
+import matplotlib.pyplot as plt
+import numpy as np
 
 def logloss(act, pred):
     epsilon = 1e-15
@@ -19,6 +21,25 @@ def mapCategories(categories):
         tMap[value] = i
         i = i+1
     return tMap
+
+def overtime(period):
+	if period > 4:
+		return 1
+	else:
+		return 0
+
+def plot():
+	alpha = 0.02
+	plt.figure(figsize=(10,10))
+	df = pd.read_csv('data/data.csv', sep=',', header=0).dropna()
+
+	df['locx1'] = df['loc_x'].map(lambda x: abs(x))
+	df['locy1'] = df['loc_y'].map(lambda x: abs(x))
+
+	plt.subplot(121)
+	plt.scatter(df.locx1, df.locy1, color='blue', alpha=alpha)
+	plt.title('loc_x and loc_y')
+	plt.show()
 
 def getDataFrame():
 
@@ -42,12 +63,16 @@ def getDataFrame():
 	df['game_date'] = df['game_date'].map(lambda x: x.toordinal())
 	df['game_date'] = df['game_date'].map(lambda x: x - df.game_date.min())
 	df['total_elapsed_time'] = ((df.period-1)*12*60) + ((11-df.minutes_remaining)*60) + (60 - df.seconds_remaining)
+	df['remaning_time'] = df['minutes_remaining']*60+df['seconds_remaining']
+	df['overtime'] = df['period'].map(lambda x: int(x>4))
+	df['arc'] = np.arctan2(df['loc_x'],df['loc_y'])
 
 	seasons = df['season'].str.slice(start=0,stop=4)
 	df['season_int'] = seasons.map(lambda x: int(x)-1996)
 
 	return df
 
+plot()
 #expected = testY
 #print dfPredicted.head(20)
 
