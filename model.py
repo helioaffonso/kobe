@@ -202,8 +202,10 @@ def submission():
 	df = df.dropna()
 
 	y = df['shot_made_flag'].as_matrix()
-	X = df.drop(['team_name','shot_type', 'game_id', 'shot_zone_area', 'combined_shot_type', 'shot_zone_basic', 'shot_zone_range', 'matchup', 'opponent', 'action_type', 'team_id', 'season', 'shot_made_flag'], axis=1).as_matrix()
-	testX = dfTest.drop(['team_name','shot_type', 'game_id', 'shot_zone_area', 'combined_shot_type', 'shot_zone_basic', 'shot_zone_range', 'matchup', 'opponent', 'action_type', 'team_id', 'season', 'shot_made_flag'], axis=1).values
+	#X = df.drop(['team_name','shot_type', 'game_id', 'shot_zone_area', 'combined_shot_type', 'shot_zone_basic', 'shot_zone_range', 'matchup', 'opponent', 'action_type', 'team_id', 'season', 'shot_made_flag'], axis=1).as_matrix()
+	X = df.drop(['game_event_id', 'lat', 'lon', 'team_name','shot_type', 'game_id', 'shot_zone_area', 'combined_shot_type', 'minutes_remaining', 'seconds_remaining', 'shot_zone_basic', 'shot_zone_range', 'matchup', 'opponent', 'action_type', 'team_id', 'season', 'shot_made_flag'], axis=1).as_matrix()
+
+	testX = dfTest.drop(['game_event_id', 'lat', 'lon', 'team_name','shot_type', 'game_id', 'shot_zone_area', 'combined_shot_type', 'minutes_remaining', 'seconds_remaining', 'shot_zone_basic', 'shot_zone_range', 'matchup', 'opponent', 'action_type', 'team_id', 'season', 'shot_made_flag'], axis=1).values
 
 	#clfX = xgb.XGBClassifier(learning_rate=0.1, n_estimators=50,max_depth=5, min_child_weight=1, subsample=0.8,scale_pos_weight=1,colsample_bytree=0.8,gamma=0,seed=27)
 	clfRF = RandomForestClassifier(n_estimators=100)
@@ -228,7 +230,7 @@ def submission():
 	dfPredicted = pd.DataFrame({})
 	dfPredicted['shot_id'] = shotSeries
 	dfPredicted['shot_made_flag'] = dfPred['XGRF'].values
-	dfPredicted.to_csv('data/resultsXG-RF-GB.csv', sep=',', index=False)
+	dfPredicted.to_csv('data/resultsXG-RF-GB-matchup2.csv', sep=',', index=False)
 
 
 def standartModel():

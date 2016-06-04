@@ -22,12 +22,6 @@ def mapCategories(categories):
         i = i+1
     return tMap
 
-def overtime(period):
-	if period > 4:
-		return 1
-	else:
-		return 0
-
 def plot():
 	alpha = 0.02
 	plt.figure(figsize=(10,10))
@@ -40,6 +34,12 @@ def plot():
 	plt.scatter(df.locx1, df.locy1, color='blue', alpha=alpha)
 	plt.title('loc_x and loc_y')
 	plt.show()
+
+def mapMatchup(matchup):
+	if matchup.find('@') > 0:
+		return 0
+	else:
+		return 1
 
 def getDataFrame():
 
@@ -65,14 +65,15 @@ def getDataFrame():
 	df['total_elapsed_time'] = ((df.period-1)*12*60) + ((11-df.minutes_remaining)*60) + (60 - df.seconds_remaining)
 	df['remaning_time'] = df['minutes_remaining']*60+df['seconds_remaining']
 	df['overtime'] = df['period'].map(lambda x: int(x>4))
-	df['arc'] = np.arctan2(df['loc_x'],df['loc_y'])
+	df['degrees'] = np.degrees(np.arctan2(df['loc_y'],df['loc_x']))
+	df['matchup_alt'] = df['matchup'].map(lambda x: mapMatchup(x))
 
 	seasons = df['season'].str.slice(start=0,stop=4)
 	df['season_int'] = seasons.map(lambda x: int(x)-1996)
 
 	return df
 
-plot()
+#plot()
 #expected = testY
 #print dfPredicted.head(20)
 
